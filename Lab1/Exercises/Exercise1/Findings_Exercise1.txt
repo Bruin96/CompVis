@@ -1,0 +1,9 @@
+Test results Classical Snake:
+
+1) For the classic snake, the empty region in between the two protrusions of the U-shape forms a significant challenge. We see that for every kind of setting, the snake will opt to connect the two protrusions at a position higher than the actual bottom of the empty space between the protrusions. This happens both when we initialise the snake across the figure (r = 0.5) or fully outside the shape (r = 0.7). It will find all other contours of the shape, but the empty space always forms a problem.
+2) If we increase the radius too far away (r = 0.9), it takes a very long while before the snake gets close to the shape. We can speed up convergence by increasing alpha to 0.75, but that has the side effect of increasing the tension of the snake, which makes it so that the area between the protrusions is approximated even less accurately.
+
+Test results GVF Snake:
+1) The GVF snake can approximate the contour of the U shape a lot more accurately. Using the default settings and increasing the iterations to 150, we find that converge happens at around the 100 iteration mark, and the fit is quite close.
+2) One issue that remains is that the snake approximates sharp corners by a rather curvy part of the snake. This is a property of the GVF snake, but if we start with the GVF snake and then allow for a few iterations of the normal snake (using the GVF snake's fit as an initialisation), we are able to approximate these sharp corners even better.
+3) The GVF snake converges really fast even when initialised far away from the image. It takes only approximately 150 iterations to converge, which is approximately the same as for initialisations close to the shape. 
