@@ -1,0 +1,7 @@
+Findings Exercise 6:
+- The classic snake algorithm is quite sensitive to local minima: unless you initialise it rather close to the expected boundary, it is likely to get stuck on some nearby smaller minima. 
+- The GVF snake has better resistance against nearby local minima, but it is still susceptible to local minima that protrude from the expected boundary. As such, we often see spikes coming out of the contour.
+- We can combine the two snakes by first applying one snake, going back and changing the active snake type, and applying the algorithm on the result of the first snake.
+- The strength of the GVF snake is that it can fit itself to a form even if it is initialised partially inside and partially outside the shape. The classic snake cannot do this: it will continue to shrink and miss out on the protruding parts of the shape.
+- The weakness of the GVF snake is that it is less capable of fitting itself to corners, which it typically approximates less accurately than a classic snake could.
+- We can mitigate this weakness by first applying a GVF snake and then a classic snake with beta = 0, such that it closely fits itself to the corners. Because the snake is so close to the actual border after applying the GVF snake, applying the classic snake will find the border, and will furthermore better approximate the corners of the shape.
