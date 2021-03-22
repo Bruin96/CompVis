@@ -1,13 +1,18 @@
-im1 = im2double(rgb2gray(imread('tsukuba1.png')));
-im2 = im2double(rgb2gray(imread('tsukuba2.png')));
+im1 = im2single(rgb2gray(imread('tsukuba1.png')));
+im2 = im2single(rgb2gray(imread('tsukuba2.png')));
 
 %figure;
 %imshow(im1);
 %figure;
 %imshow(im2);
 
+im1_gpu = gpuArray(single(im1));
+im2_gpu = gpuArray(single(im2));
+
 [M, N] = size(im1);
-disparities = compute_disparities(im1, im2, 'SSD'); % Values in range [-M, +M]
+win_height = 23;
+win_width = 23;
+disparities = compute_disparities(im1, im2, 'AD', win_height, win_width);
 
 % Convert disparity to grey-scale
 min_val = min(min(disparities));

@@ -1,8 +1,6 @@
-function dispars = compute_disparities_pearson(im1, im2)
-    [M, N] = size(im1)
+function dispars = compute_disparities_pearson(im1, im2, win_height, win_width)
+    [M, N] = size(im1);
     dispars = zeros(M, N);
-    win_height = 11;
-    win_width = 11;
     win_size = max(win_height, win_width);
     
     
@@ -12,7 +10,6 @@ function dispars = compute_disparities_pearson(im1, im2)
     padded_im1(pad_size+1:M+pad_size, pad_size+1:N+pad_size) = im1;
     padded_im2 = zeros(M+2*pad_size, N+2*pad_size);
     padded_im2(pad_size+1:M+pad_size, pad_size+1:N+pad_size) = im2;
-    disp('Hello from absolute difference!');
     
     x_bottom = 1+pad_size;
     x_top = M-pad_size;
@@ -21,17 +18,13 @@ function dispars = compute_disparities_pearson(im1, im2)
     
     tic
     parfor x = x_bottom:x_top
-        if mod(x, 10) == 0
-            x
-        end
-        %vec = 1+pad_size:N-pad_size
         for y = y_bottom:y_top
             %y
             max_diff = realmin;
             lower_bound = max(1-y+pad_size, -round(30));
             upper_bound = min(N-y, round(0));
             for d = lower_bound:upper_bound % Try all possible disparities
-                abs_diff_val = compute_pearson_coefficient(padded_im1, padded_im2, win_size, x, y, d);
+                abs_diff_val = compute_pearson_coefficient(padded_im1, padded_im2, win_height, win_width, x, y, d);
                 if abs_diff_val > max_diff
                     max_diff = abs_diff_val;
                     dispars(x, y) = -d;
