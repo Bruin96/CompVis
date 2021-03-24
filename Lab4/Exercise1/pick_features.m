@@ -8,6 +8,11 @@ y1 = [];
 x2 = [];
 y2 = [];
 
+disp('Please select the features in the images.')
+disp('After selecting a feature, please select the corresponding feature in the second image.')
+disp('Left mouse button picks a point.')
+disp('Right mouse button picks last point.')
+
 but = 1;
 while but == 1
       imshow(I1);
