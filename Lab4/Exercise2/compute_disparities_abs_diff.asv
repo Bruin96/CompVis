@@ -1,5 +1,5 @@
 function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
-    %profile on
+    profile on
     [M, N] = size(im1);
     dispars = zeros(M, N, 'single');
     win_area = round(win_height*win_width);
@@ -20,14 +20,14 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
     end
     
     % Initialise costs matrix at a high value to facilitate minimum operation later on
-    row_vals = zeros(M, N, max_disparity+1, 'single');
+    row_vals = zeros(M, N, max_disparity+1, );
     costs = 12000*ones(M, N, max_disparity+1, 'single'); 
     
     im_beam = im1(x_bottom-pad_height:x_bottom+pad_height, :);
     for y = y_bottom:y_top
-        im1_window = im_beam(:, y-pad_width:y+pad_width);
+        im1_window = im_beam(x_bottom-pad_height:x_bottom+pad_height, y-pad_width:y+pad_width);
         for d = lower_bound(x_bottom, y):0
-            im2_window = im2(x_bottom-pad_height:x_bottom+pad_height, y+d-pad_width:y+d+pad_width);
+            im2_window = im_beam(x_bottom-pad_height:x_bottom+pad_height, y + d -pad_width: y+d+pad_width);
             abs_diff = 0;
             for i = x_bottom-pad_height:x_bottom+pad_height
                 row_vals(i, y, -d+1) = sum(abs(im1_window(i, :) - im2_window(i, :)));
@@ -35,16 +35,18 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
             end
             costs(x_bottom, y, -d+1) = abs_diff;
         end
+        
     end
-    %curr_row_vals = row_vals(x_bottom-pad_height:x_bottom+pad_height, :, 1)
     
     for x = x_bottom+1:x_top
+        im_beam = im1(x+pad_height, :);
         for y = y_bottom:y_top
             if y <= y_bottom+max_disparity+1 % lower_bound changes in this region, so we can't use area table here
-                im1_window = im1(x+pad_height, y-pad_width:y+pad_width);
+                im1_window = im_beam(y-pad_width:y+pad_width);
                 for d = lower_bound(x, y):0
-                    row_vals(x+pad_height, y, -d+1) = sum(abs(im1_window - im2(x+pad_height, y+d-pad_width:y+d+pad_width)));
-                    costs(x, y, -d+1) = costs(x-1, y, -d+1) - row_vals(x-1-pad_height, y, -d+1) + row_vals(x+pad_height, y, -d+1);
+                    top_idx = x-1-pad_height;
+                    row_vals(x+pad_height, y, -d+1) = sum(abs(im1_window - im_beam(y+d-pad_width:y+d+pad_width)));
+                    costs(x, y, -d+1) = costs(x-1, y, -d+1) - row_vals(top_idx, y, -d+1) + row_vals(x+pad_height, y, -d+1);
                 end
             else % We use full dynamic programming here
                 for d = lower_bound(x, y):0
@@ -57,7 +59,6 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
                         abs(im1(x+pad_height, y-1-pad_width) - im2(x+pad_height, y-1+d-pad_width)) + ...
                         abs(im1(x+pad_height, y+pad_width) - im2(x+pad_height, y+d+pad_width));
                 end
-                
             end
         end
     end
@@ -110,5 +111,5 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
     end
         
     %}
-    %profile viewer
+    profile viewer
 end
