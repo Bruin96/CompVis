@@ -1,4 +1,5 @@
 function dispars = compute_disparities_cross_correlation(im1, im2, win_height, win_width)
+    %profile on    
     [M, N] = size(im1);
     dispars = zeros(M, N, 'single');
     win_area = round(win_height*win_width);
@@ -6,7 +7,7 @@ function dispars = compute_disparities_cross_correlation(im1, im2, win_height, w
     pad_height = floor(win_height/2);
     beam_size = win_height*N;
     
-    max_disparity = 30;
+    max_disparity = 32;
     
     x_bottom = 1+pad_height;
     x_top = M-pad_height;
@@ -24,13 +25,32 @@ function dispars = compute_disparities_cross_correlation(im1, im2, win_height, w
     row_vals = zeros(M, N, max_disparity+1, 'single');
     im1_window_sum_vals = zeros(M, N);
     im2_window_sum_vals = zeros(M, N);
-    costs = 12000*ones(M, N, max_disparity+1, 'single'); 
+    % Initialise costs matrix at a low value to facilitate maximum operation later on
+    costs = -12000*ones(M, N, max_disparity+1, 'single'); 
+    
+    if win_width == 1 && win_height == 1
+        im1_window_sum_vals  = im1.^2;
+        im2_window_sum_vals = im2.^2;
+    else
     
     for x = x_bottom:x_top
         for y = y_bottom:y_top
-            im1_window_sum_vals(x, y) = sum(sum(im1(x-pad_height:x+pad_height, y-pad_width:y+pad_width).^2));
-            im2_window_sum_vals(x, y) = sum(sum(im2(x-pad_height:x+pad_height, y-pad_width:y+pad_width).^2));
+            if x == x_bottom
+                im1_window_sum_vals(x, y) = sum(sum(im1(x-pad_height:x+pad_height, y-pad_width:y+pad_width).^2));
+                im2_window_sum_vals(x, y) = sum(sum(im2(x-pad_height:x+pad_height, y-pad_width:y+pad_width).^2));
+            elseif y == y_bottom
+                im1_window_sum_vals(x, y) = im1_window_sum_vals(x-1, y) - sum(im1(x-pad_height-1, y-pad_width:y+pad_width).^2) + sum(im1(x+pad_height, y-pad_width:y+pad_width).^2);
+                im2_window_sum_vals(x, y) = im2_window_sum_vals(x-1, y) - sum(im2(x-pad_height-1, y-pad_width:y+pad_width).^2) + sum(im2(x+pad_height, y-pad_width:y+pad_width).^2);
+            else
+                im1_window_sum_vals(x, y) = im1_window_sum_vals(x-1, y) + im1_window_sum_vals(x, y-1) - im1_window_sum_vals(x-1, y-1) + ...
+                    im1(x-1-pad_height, y-1-pad_width)^2 - im1(x-1-pad_height, y+pad_width)^2 - ...
+                    im1(x+pad_height, y-1-pad_width)^2 + im1(x+pad_height, y+pad_width)^2;
+                im2_window_sum_vals(x, y) = im2_window_sum_vals(x-1, y) + im2_window_sum_vals(x, y-1) - im2_window_sum_vals(x-1, y-1) + ...
+                    im2(x-1-pad_height, y-1-pad_width)^2 - im2(x-1-pad_height, y+pad_width)^2 - ...
+                    im2(x+pad_height, y-1-pad_width)^2 + im2(x+pad_height, y+pad_width)^2;
+            end
         end
+    end
     end
     
     im_beam = im1(x_bottom-pad_height:x_bottom+pad_height, :);
@@ -48,8 +68,39 @@ function dispars = compute_disparities_cross_correlation(im1, im2, win_height, w
     end
     %curr_row_vals = row_vals(x_bottom-pad_height:x_bottom+pad_height, :, 1)
     
+    % Compute disparity for leftmost column
     for x = x_bottom+1:x_top
-        for y = y_bottom:y_top
+        for d = lower_bound(x, y_bottom):0
+            row_vals(x+pad_height, y_bottom, -d+1) = sum(im1(x+pad_height, y_bottom-pad_width:y_bottom+pad_width) .* im2(x+pad_height, y_bottom+d-pad_width:y_bottom+d+pad_width));
+            costs(x, y_bottom, -d+1) = costs(x-1,y_bottom, -d+1) - row_vals(x-1-pad_height, y_bottom, -d+1) + row_vals(x+pad_height, y_bottom, -d+1);
+        end
+    end
+    
+    one_plus_pad_width = 1 + pad_width;
+    one_plus_pad_height = 1+pad_height;
+    
+    for x = x_bottom+1:x_top
+        x_neg_offset = x-one_plus_pad_height;
+        x_pos_offset = x+pad_height;
+        for y = y_bottom+1:y_bottom+max_disparity+1
+                val_1_1 = im1(x-one_plus_pad_height,y-one_plus_pad_width);
+                val_1_2 = im1(x-one_plus_pad_height, y+pad_width);
+                val_1_3 = im1(x+pad_height, y-one_plus_pad_width);
+                val_1_4 = im1(x+pad_height, y+pad_width);
+                for d = lower_bound(x, y)+1:0
+                    costs(x, y, -d+1) = costs(x-1, y, -d+1) + costs(x, y-1, -d+1) - costs(x-1, y-1, -d+1) + ...
+                        val_1_1 * im2(x_neg_offset, y+d-one_plus_pad_width) - ...
+                        val_1_2 * im2(x_neg_offset, y+d+pad_width) - ...
+                        val_1_3 * im2(x_pos_offset, y+d-one_plus_pad_width) + ...
+                        val_1_4 * im2(x_pos_offset, y+d+pad_width);
+                end
+                row_vals(x+pad_height, y, -lower_bound(x, y)+1) = sum(im1(x_pos_offset, y-pad_width:y+pad_width) .* im2(x_pos_offset, y+lower_bound(x, y)-pad_width:y+lower_bound(x, y)+pad_width));
+                costs(x, y, -lower_bound(x, y)+1) = costs(x-1, y, -lower_bound(x, y)+1) - row_vals(x_neg_offset, y, -lower_bound(x, y)+1) + row_vals(x_pos_offset, y, -lower_bound(x, y)+1);
+        end
+    end 
+    
+    for x = x_bottom+1:x_top
+        for y = y_bottom+max_disparity+2:y_top
             if y <= y_bottom+max_disparity+1 % lower_bound changes in this region, so we can't use area table here
                 im1_window = im1(x+pad_height, y-pad_width:y+pad_width);
                 for d = lower_bound(x, y):0
@@ -76,7 +127,12 @@ function dispars = compute_disparities_cross_correlation(im1, im2, win_height, w
     for x = x_bottom:x_top
         for y = y_bottom:y_top
             for d = lower_bound(x,y):0
-                costs(x, y, -d+1) = costs(x, y, -d+1) / sqrt(im1_window_sum_vals(x, y)*im2_window_sum_vals(x, y+d)); 
+                %x
+                %y
+                %d
+                %sqrt(im1_window_sum_vals(x, y)*im2_window_sum_vals(x, y+d))
+                %costs(x, y, -d+1) / sqrt(im1_window_sum_vals(x, y)*im2_window_sum_vals(x, y+d))
+                costs(x, y, -d+1) = costs(x, y, -d+1) / sqrt(im1_window_sum_vals(x, y)*im2_window_sum_vals(x, y+d));
             end
         end
     end
@@ -101,4 +157,6 @@ function dispars = compute_disparities_cross_correlation(im1, im2, win_height, w
     
     [~, dispar_val] = max(costs(x_bottom:x_top, y_bottom:y_top, :), [], 3);
     dispars(x_bottom:x_top, y_bottom:y_top) = dispar_val-1;
+    
+    %profile viewer
 end
