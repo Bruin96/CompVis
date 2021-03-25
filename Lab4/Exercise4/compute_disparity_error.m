@@ -13,8 +13,8 @@
 function MSE = compute_disparity_error(image1, image2, ground_truth_image, max_disparity)
 
 % Find SIFT keypoints for each image
-[~, des1, loc1] = sift(image1);
-[~, des2, loc2] = sift(image2);
+[im1, des1, loc1] = sift(image1);
+[im2, des2, loc2] = sift(image2);
 
 % For efficiency in Matlab, it is cheaper to compute dot products between
 %  unit vectors rather than Euclidean distances.  Note that the ratio of 
@@ -39,17 +39,51 @@ for i = 1 : size(des1,1)
    end
 end
 
+% Create a new image showing the two images side by side.
+im3 = appendimages(im1,im2);
+
+% Show a figure with lines joining the accepted matches.
+figure('Position', [100 100 size(im3,2) size(im3,1)]);
+colormap('gray');
+imagesc(im3);
+hold on;
+cols1 = size(im1,2);
+for i = 1: size(des1,1)
+  if (match(i) > 0)
+      if (loc1(i,1) == loc2(match(i),1))
+        line([loc1(i,2) loc2(match(i),2)+cols1], ...
+         [loc1(i,1) loc2(match(i),1)], 'Color', 'c');
+      else
+           line([loc1(i,2) loc2(match(i),2)+cols1], ...
+         [loc1(i,1) loc2(match(i),1)], 'Color', 'r');
+      end
+  end
+end
+hold off;
+num = sum(match > 0);
+fprintf('Found %d matches.\n', num);
+
 ground_truth = im2single(imread(ground_truth_image));
 
 MSE = 0;
+max_vert_dist = 0;
 % loop through all features
-for i = 1: size(des1,1)
+for i = 1: size(des1,1) 
   if (match(i) > 0)
-    prediction = abs(loc1(i,2)-loc2(match(i),2));
-    value = ground_truth(floor(loc1(i,1)), floor(loc1(i,2))) * max_disparity;
-    MSE = MSE + (value - prediction)^2;
+      % if match does not have vertical deviation
+      if (loc1(i,1) == loc2(match(i),1))
+        prediction = abs(loc1(i,2)-loc2(match(i),2));
+        value = ground_truth(floor(loc1(i,1)), floor(loc1(i,2))) * max_disparity;
+        MSE = MSE + (value - prediction)^2;
+      else
+         dist = abs(loc1(i,1) - loc2(match(i),1));
+         if (dist > max_vert_dist)
+             max_vert_dist = dist;
+         end
+     end
   end
 end
+max_vert_dist
 MSE = MSE / size(des1,1);
 
 
