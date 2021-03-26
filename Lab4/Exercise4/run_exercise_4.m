@@ -6,6 +6,4 @@ im2 = im2single(rgb2gray(imread('tsukuba2.png')));
 imwrite(im1, 'tsukuba1_gray.png');
 imwrite(im2, 'tsukuba2_gray.png');
 
-max_disparity = 33;
-
-compute_disparity_error('tsukuba1_gray.png','tsukuba2_gray.png', 'tsukuba_gt.png', max_disparity)
+compute_disparity_error('tsukuba1_gray.png','tsukuba2_gray.png', 'tsukuba_gt.png')

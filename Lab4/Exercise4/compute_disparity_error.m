@@ -8,9 +8,9 @@
 % using the ground truth image
 % The MSE values is returned.
 %
-% Example: match('tsukuba1.png','tsukuba2.png', 'tsukuba_gt.png', 33);
+% Example: match('tsukuba1.png','tsukuba2.png', 'tsukuba_gt.png');
 
-function MSE = compute_disparity_error(image1, image2, ground_truth_image, max_disparity)
+function MSE = compute_disparity_error(image1, image2, ground_truth_image)
 
 % Find SIFT keypoints for each image
 [im1, des1, loc1] = sift(image1);
