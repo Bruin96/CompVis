@@ -1,11 +1,17 @@
-function MSE = compute_disparity_error(I1,I2, ground_truth, max_disparity)  
+function MSE = compute_disparity_error(I1,I2, ground_truth)  
+
     [x1,y1,x2,~] = pick_features(I1,I2);
-    MSE = 0;
+
+    predictions = NaN(size(ground_truth));
+
     % loop through all features
-    for n = 1:length(x1)
-        % value at position (floor(x1(n)), floor(y1(n)))
-        prediction = abs(x2(n) - x1(n))
-        value = ground_truth(floor(y1(n)), floor(x1(n))) * max_disparity
-        MSE = MSE + (value - prediction)^2;
+    for i = 1:length(x1)
+             predictions(floor(y1(i)), floor(x1(i))) = abs(x2(i) - x1(i));
     end
-    MSE = MSE / length(x1);
+    
+    minimum_disparity = min(min(predictions))
+    maximum_disparity = max(max(predictions))
+    not_nan = ~isnan(predictions);
+    predictions(not_nan) = (predictions(not_nan) - max(predictions(not_nan))) ./ (max(predictions(not_nan)) - min(predictions(not_nan)));
+    ground_truth_norm = (ground_truth - max(ground_truth)) ./ (max(ground_truth) - min(ground_truth));
+    MSE = sum(sum((ground_truth_norm(not_nan) - predictions(not_nan)).^2)) / length(x1);

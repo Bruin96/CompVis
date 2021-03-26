@@ -65,16 +65,14 @@ fprintf('Found %d matches.\n', num);
 
 ground_truth = im2single(imread(ground_truth_image));
 
-MSE = 0;
+predictions = NaN(size(ground_truth));
 max_vert_dist = 0;
 % loop through all features
 for i = 1: size(des1,1) 
   if (match(i) > 0)
       % if match does not have vertical deviation
       if (loc1(i,1) == loc2(match(i),1))
-        prediction = abs(loc1(i,2)-loc2(match(i),2));
-        value = ground_truth(floor(loc1(i,1)), floor(loc1(i,2))) * max_disparity;
-        MSE = MSE + (value - prediction)^2;
+         predictions(floor(loc1(i,1)), floor(loc1(i,2))) = abs(loc1(i,2)-loc2(match(i),2));
       else
          dist = abs(loc1(i,1) - loc2(match(i),1));
          if (dist > max_vert_dist)
@@ -83,9 +81,13 @@ for i = 1: size(des1,1)
      end
   end
 end
+minimum_disparity = min(min(predictions))
+maximum_disparity = max(max(predictions))
+not_nan = ~isnan(predictions);
+predictions(not_nan) = (predictions(not_nan) - max(predictions(not_nan))) ./ (max(predictions(not_nan)) - min(predictions(not_nan)));
+ground_truth_norm = (ground_truth - max(ground_truth)) ./ (max(ground_truth) - min(ground_truth));
+MSE = sum(sum((ground_truth_norm(not_nan) - predictions(not_nan)).^2)) /  size(des1,1);
 max_vert_dist
-MSE = MSE / size(des1,1);
-
 
 
 
