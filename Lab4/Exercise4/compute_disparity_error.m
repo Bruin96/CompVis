@@ -1,16 +1,20 @@
-% num = match(image1, image2)
+% MSE = compute_disparity_error(image1, image2, ground_truth_image, filter)
 %
 % This function reads a set of stereo pair images, finds their SIFT features, 
-% and computes the disparity values between the features. A match is accepted
-%   only if its distance is less than distRatio times the distance to the
-%   second closest match.
+% and computes the disparity values between the features.
 % After the disparity values are obtained, the function computes the MSE
-% using the ground truth image
-% The MSE values is returned.
+% using the ground truth image. A match is accepted
+%   only if its distance is less than distRatio times the distance to the
+%   second closest match. If filter is set to true, matches that do not 
+%   lie on the same horizontal axis are removed. If set to false, the
+%   results are included in the MSE calculation.
+% The MSE values is returned. The maximal vertical distance in
+% matches, the maximum disparity and the mininum disparity are also displayed to
+% the user.
 %
-% Example: match('tsukuba1.png','tsukuba2.png', 'tsukuba_gt.png');
+% Example: match('tsukuba1.png','tsukuba2.png', 'tsukuba_gt.png', true);
 
-function MSE = compute_disparity_error(image1, image2, ground_truth_image)
+function MSE = compute_disparity_error(image1, image2, ground_truth_image, filter)
 
 % Find SIFT keypoints for each image
 [im1, des1, loc1] = sift(image1);
@@ -66,28 +70,28 @@ fprintf('Found %d matches.\n', num);
 ground_truth = im2single(imread(ground_truth_image));
 
 predictions = NaN(size(ground_truth));
-max_vert_dist = 0;
+vert_dist = [];
 % loop through all features
 for i = 1: size(des1,1) 
   if (match(i) > 0)
       % if match does not have vertical deviation
-      if (loc1(i,1) == loc2(match(i),1))
+      if (~filter || loc1(i,1) == loc2(match(i),1))
          predictions(floor(loc1(i,1)), floor(loc1(i,2))) = abs(loc1(i,2)-loc2(match(i),2));
-      else
-         dist = abs(loc1(i,1) - loc2(match(i),1));
-         if (dist > max_vert_dist)
-             max_vert_dist = dist;
-         end
+      end
+      if (loc1(i,1) ~= loc2(match(i),1))
+         vert_dist(i) = abs(loc1(i,1) - loc2(match(i),1));
+
      end
   end
 end
 minimum_disparity = min(min(predictions))
 maximum_disparity = max(max(predictions))
+maximum_vertical_distance = max(vert_dist)
+
 not_nan = ~isnan(predictions);
-predictions(not_nan) = (predictions(not_nan) - max(predictions(not_nan))) ./ (max(predictions(not_nan)) - min(predictions(not_nan)));
-ground_truth_norm = (ground_truth - max(ground_truth)) ./ (max(ground_truth) - min(ground_truth));
+predictions(not_nan) = (predictions(not_nan) - max(max(predictions(not_nan)))) ./ (max(max(predictions(not_nan))) - min(min(predictions(not_nan))));
+ground_truth_norm = (ground_truth - max(max(ground_truth))) ./ (max(max(ground_truth)) - min(min(ground_truth)));
 MSE = sum(sum((ground_truth_norm(not_nan) - predictions(not_nan)).^2)) /  size(des1,1);
-max_vert_dist
 
 
 
