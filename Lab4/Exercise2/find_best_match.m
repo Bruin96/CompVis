@@ -10,6 +10,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     highest_XCORR = realmin;
     [M, N] = size(im1);
     
+    % Variables for storing intermediate score arrays for later plotting
     AD_score_storage = zeros(3, (top_win_size+1)/2);
     SSD_score_storage = zeros(3, (top_win_size+1)/2);
     XCORR_score_storage = zeros(3, (top_win_size+1)/2);
@@ -20,9 +21,10 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     
     disp('Computing best for AD method');
     tic
-    parfor i = 1:(top_win_size+1)/2 % Compute AD method first
+    parfor i = 1:(top_win_size+1)/2 
         dispar = zeros(M, N);
         curr_win_size = i*2-1;
+        
         dispar_vals = compute_disparities_abs_diff(im1, im2, curr_win_size, curr_win_size);
         percentile = prctile(dispar_vals(:), 99.9);
         dispar_vals(dispar_vals > percentile) = 0;
@@ -44,6 +46,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     SSD_score_storage(1, :) = SSD_score;
     XCORR_score_storage(1, :) = XCORR_score;
     
+    % Compute lowest score for all three comparison metrics
     [curr_min_AD, idx_AD] = min(AD_score);
     [curr_min_SSD, idx_SSD] = min(SSD_score);
     [curr_max_XCORR, idx_XCORR] = max(XCORR_score);
@@ -76,10 +79,12 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     parfor i = 1:(top_win_size+1)/2 
         dispar = zeros(M, N);
         curr_win_size = i*2-1;
+        
         dispar_vals = compute_disparities_sum_squared_diff(im1, im2, curr_win_size, curr_win_size);
         percentile = prctile(dispar_vals(:), 99.9);
         dispar_vals(dispar_vals > percentile) = 0;
         dispar(19:M-18, 19:N-18) = dispar_vals(19:M-18, 19:N-18);
+        
         min_val = min(min(dispar));
         max_val = max(max(dispar));
         im_dispar = (dispar - min_val) ./(max_val - min_val);
@@ -96,6 +101,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     SSD_score_storage(2, :) = SSD_score;
     XCORR_score_storage(2, :) = XCORR_score;
     
+    % Compute lowest score for all three comparison metrics
     [curr_min_AD, idx_AD] = min(AD_score);
     [curr_min_SSD, idx_SSD] = min(SSD_score);
     [curr_max_XCORR, idx_XCORR] = max(XCORR_score);
@@ -128,10 +134,12 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     parfor i = 1:(top_win_size+1)/2 
         dispar = zeros(M, N);
         curr_win_size = i*2-1;
+        
         dispar_vals = compute_disparities_cross_correlation(im1, im2, curr_win_size, curr_win_size);
         percentile = prctile(dispar_vals(:), 99.9);
         dispar_vals(dispar_vals > percentile) = 0;
         dispar(19:M-18, 19:N-18) = dispar_vals(19:M-18, 19:N-18);
+        
         min_val = min(min(dispar));
         max_val = max(max(dispar));
         im_dispar = (dispar - min_val) ./(max_val - min_val);
@@ -150,6 +158,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     SSD_score_storage(3, :) = SSD_score;
     XCORR_score_storage(3, :) = XCORR_score;
     
+    % Compute lowest score for all three comparison metrics
     [curr_min_AD, idx_AD] = min(AD_score);
     [curr_min_SSD, idx_SSD] = min(SSD_score);
     [curr_max_XCORR, idx_XCORR] = max(XCORR_score);

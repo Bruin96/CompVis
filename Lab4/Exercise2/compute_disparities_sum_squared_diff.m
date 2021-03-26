@@ -12,7 +12,7 @@ function dispars = compute_disparities_sum_squared_diff(im1, im2, win_height, wi
     y_top = N-pad_width;
     
     lower_bound = zeros(M, N, 'single');
-    for y = y_bottom:y_top
+    for y = y_bottom:y_top % Compute the largest possible disparity at the current column
         lower_bound(:, y) = max(1-y+pad_width, -max_disparity);
     end
     
@@ -21,6 +21,8 @@ function dispars = compute_disparities_sum_squared_diff(im1, im2, win_height, wi
     costs = 12000*ones(M, N, max_disparity+1, 'single'); 
     
     im_beam = im1(x_bottom-pad_height:x_bottom+pad_height, :);
+    
+    % Compute disparity for top row
     for y = y_bottom:y_top
         im1_window = im_beam(:, y-pad_width:y+pad_width);
         for d = lower_bound(x_bottom, y):0
@@ -45,6 +47,8 @@ function dispars = compute_disparities_sum_squared_diff(im1, im2, win_height, wi
     one_plus_pad_width = 1 + pad_width;
     one_plus_pad_height = 1+pad_height;
     
+    % Compute disparity for leftmost max_disparity+1 column, since those
+    % have varying lower bounds and need special attention
     for x = x_bottom+1:x_top
         x_neg_offset = x-one_plus_pad_height;
         x_pos_offset = x+pad_height;
@@ -65,26 +69,16 @@ function dispars = compute_disparities_sum_squared_diff(im1, im2, win_height, wi
         end
     end        
     
+    % Compute disparity for all other points in the images using dynamic
+    % programming
     for x = x_bottom+1:x_top
         for y = y_bottom+max_disparity+2:y_top
-            if y <= y_bottom+max_disparity+1 % lower_bound changes in this region, so we can't use area table here
-                im1_window = im1(x+pad_height, y-pad_width:y+pad_width);
-                for d = lower_bound(x, y):0
-                    row_vals(x+pad_height, y, -d+1) = sum((im1_window - im2(x+pad_height, y+d-pad_width:y+d+pad_width)).^2);
-                    costs(x, y, -d+1) = costs(x-1, y, -d+1) - row_vals(x-1-pad_height, y, -d+1) + row_vals(x+pad_height, y, -d+1);
-                end
-            else % We use full dynamic programming here
-                for d = lower_bound(x, y):0
-                    %x
-                    %y
-                    %d
-                    costs(x, y, -d+1) = costs(x-1, y, -d+1) + costs(x, y-1, -d+1) - costs(x-1, y-1, -d+1) + ...
-                        (im1(x-1-pad_height, y-1-pad_width) - im2(x-1-pad_height, y-1+d-pad_width))^2 - ...
-                        (im1(x-1-pad_height, y+pad_width) - im2(x-1-pad_height, y+d+pad_width))^2 - ...
-                        (im1(x+pad_height, y-1-pad_width) - im2(x+pad_height, y-1+d-pad_width))^2 + ...
-                        (im1(x+pad_height, y+pad_width) - im2(x+pad_height, y+d+pad_width))^2;
-                end
-                
+            for d = lower_bound(x, y):0
+                costs(x, y, -d+1) = costs(x-1, y, -d+1) + costs(x, y-1, -d+1) - costs(x-1, y-1, -d+1) + ...
+                    (im1(x-1-pad_height, y-1-pad_width) - im2(x-1-pad_height, y-1+d-pad_width))^2 - ...
+                    (im1(x-1-pad_height, y+pad_width) - im2(x-1-pad_height, y+d+pad_width))^2 - ...
+                    (im1(x+pad_height, y-1-pad_width) - im2(x+pad_height, y-1+d-pad_width))^2 + ...
+                    (im1(x+pad_height, y+pad_width) - im2(x+pad_height, y+d+pad_width))^2;                
             end
         end
     end

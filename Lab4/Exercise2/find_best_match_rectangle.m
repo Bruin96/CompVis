@@ -19,13 +19,13 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     
     disp('Computing best for AD method');
     tic
-    parfor i = 1:half_win_size % Compute AD method first
+    parfor i = 1:half_win_size 
         curr_win_height = i*2-1;
         disp(curr_win_height)
         for j = 1:half_win_size
             dispar = zeros(M, N);
             curr_win_width = j*2-1;
-            %disp(curr_win_size)
+
             dispar_vals = compute_disparities_abs_diff(im1, im2, curr_win_height, curr_win_width);
             percentile = prctile(dispar_vals(:), 99.9);
             dispar_vals(dispar_vals > percentile) = 0;
@@ -45,6 +45,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     disp('Time for full loop:');
     time_ended = toc
     
+    % Compute lowest score for all three comparison metrics
     [curr_min_AD, idx_AD] = min(AD_score(:));
     [curr_min_SSD, idx_SSD] = min(SSD_score(:));
     [curr_max_XCORR, idx_XCORR] = max(XCORR_score(:));
@@ -87,7 +88,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
         for j = 1:half_win_size
             dispar = zeros(M, N);
             curr_win_width = j*2-1;
-            %disp(curr_win_size)
+
             dispar_vals = compute_disparities_sum_squared_diff(im1, im2, curr_win_height, curr_win_width);
             percentile = prctile(dispar_vals(:), 99.9);
             dispar_vals(dispar_vals > percentile) = 0;
@@ -106,6 +107,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     disp('Time for full loop:');
     time_ended = toc
     
+    % Compute lowest score for all three comparison metrics
     [curr_min_AD, idx_AD] = min(AD_score(:));
     [curr_min_SSD, idx_SSD] = min(SSD_score(:));
     [curr_max_XCORR, idx_XCORR] = max(XCORR_score(:));
@@ -147,12 +149,11 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
         for j = 1:half_win_size
             dispar = zeros(M, N);
             curr_win_width = j*2-1;
-            %disp(curr_win_size)
+            
             dispar_vals = compute_disparities_cross_correlation(im1, im2, curr_win_height, curr_win_width);
             percentile = prctile(dispar_vals(:), 99.9);
             dispar_vals(dispar_vals > percentile) = 0;
             dispar(19:M-18, 19:N-18) = dispar_vals(19:M-18, 19:N-18);
-            
             
             min_val = min(min(dispar));
             max_val = max(max(dispar));
@@ -167,6 +168,7 @@ function [best_AD, best_size_AD, best_SSD, best_size_SSD, best_XCORR, best_size_
     disp('Time for full loop:');
     time_ended = toc
     
+    % Compute lowest score for all three comparison metrics
     [curr_min_AD, idx_AD] = min(AD_score(:));
     [curr_min_SSD, idx_SSD] = min(SSD_score(:));
     [curr_max_XCORR, idx_XCORR] = max(XCORR_score(:));

@@ -1,5 +1,4 @@
 function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
-    %tic
     [M, N] = size(im1);
     dispars = zeros(M, N);
     pad_width = floor(win_width/2);
@@ -13,7 +12,7 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
     y_top = N-pad_width;
     
     lower_bound = zeros(M, N);
-    for y = y_bottom:y_top
+    for y = y_bottom:y_top % Compute the largest possible disparity at the current column
         lower_bound(:, y) = max(1-y+pad_width, -max_disparity);
     end
     
@@ -47,6 +46,8 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
     one_plus_pad_width = 1 + pad_width;
     one_plus_pad_height = 1+pad_height;
     
+    % Compute disparity for leftmost max_disparity+1 column, since those
+    % have varying lower bounds and need special attention
     for x = x_bottom+1:x_top
         x_neg_offset = x-one_plus_pad_height;
         x_pos_offset = x+pad_height;
@@ -79,9 +80,6 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
                 val_1_3 = im1(x+pad_height, y-one_plus_pad_width);
                 val_1_4 = im1(x+pad_height, y+pad_width);
                 for d = lower_bound(x, y):0
-                    %x
-                    %y
-                    %d
                     costs(x, y, -d+1) = costs(x_minus_one, y, -d+1) + costs(x, y-1, -d+1) - costs(x_minus_one, y-1, -d+1) + ...
                         abs(val_1_1 - im2(x_neg_offset, y+d-one_plus_pad_width)) - ...
                         abs(val_1_2 - im2(x_neg_offset, y+d+pad_width)) - ...
@@ -94,5 +92,4 @@ function dispars = compute_disparities_abs_diff(im1, im2, win_height, win_width)
     [~, dispar_val] = min(costs(x_bottom:x_top, y_bottom:y_top, :), [], 3);
     dispars(x_bottom:x_top, y_bottom:y_top) = dispar_val-1;
     
-    %toc
 end

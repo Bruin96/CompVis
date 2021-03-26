@@ -1,4 +1,3 @@
-
 im3 = im2double(rgb2gray(imread('scene1.row3.col3.ppm')));
 im4 = im2double(rgb2gray(imread('scene1.row3.col4.ppm')));
 im3_true = im2double(imread('truedisp.row3.col3.pgm'));
